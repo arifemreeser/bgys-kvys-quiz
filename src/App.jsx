@@ -5,6 +5,8 @@ import AnimatedBackground from "./components/AnimatedBackground";
 import { questions } from "./data/question";
 
 import logo from "./assets/logo.png";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import certificateTemplate from "./assets/certificate-template.pdf";
 
 function App() {
 
@@ -31,6 +33,83 @@ function App() {
   ).length;
 
   const successRate = Math.round((correctCount / questions.length) * 100);
+  const handleStartQuiz = () => {
+    if (
+      !userInfo.fullName.trim() ||
+      !userInfo.title.trim() ||
+      !userInfo.educationDate.trim()
+    ) {
+      alert("Lütfen sınava başlamadan önce tüm alanları doldurunuz.");
+      return;
+    }
+  
+    setScreen("quiz");
+  };
+
+  const handleDownloadPdf = async () => {
+    const existingPdfBytes = await fetch(certificateTemplate).then((res) =>
+      res.arrayBuffer()
+    );
+  
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+  
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  
+    const wrongCount = answers.filter(
+      (answer, index) =>
+        answer !== undefined && answer !== questions[index].correctAnswer
+    ).length;
+  
+    const emptyCount = questions.length - answers.filter((answer) => answer !== undefined).length;
+  
+    firstPage.drawText(userInfo.fullName, {
+      x: 105,
+      y: 503,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    firstPage.drawText(`${correctCount}/${questions.length}`, {
+      x: 155,
+      y: 476,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+   
+    firstPage.drawText(`%${successRate}`, {
+      x: 120,
+      y: 450,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    firstPage.drawText(userInfo.educationDate, {
+      x: 80,
+      y: 423,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  
+    
+  
+    const pdfBytes = await pdfDoc.save();
+  
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+  
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${userInfo.fullName}-BGYS-KVYS-Sinav-Sonucu.pdf`;
+    link.click();
+  
+    URL.revokeObjectURL(url);
+  };
 
   return (
 
@@ -131,26 +210,26 @@ function App() {
                 <label style={labelStyle}>Eğitim Tarihi</label>
 
                 <input
-
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="GG.AA.YYYY"
+                  maxLength="10"
                   style={glassInputStyle}
-
                   value={userInfo.educationDate}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, "");
 
-                  onChange={(e) =>
+                    if (value.length > 2) value = value.slice(0, 2) + "." + value.slice(2);
+                    if (value.length > 5) value = value.slice(0, 5) + "." + value.slice(5, 9);
 
                     setUserInfo({
-
                       ...userInfo,
-
-                      educationDate: e.target.value,
-
-                    })
-
-                  }
-
+                      educationDate: value,
+                    });
+                  }}
                 />
 
-                <button onClick={() => setScreen("quiz")} style={formButtonStyle}>
+                <button onClick={handleStartQuiz} style={formButtonStyle}>
 
                   Sınavı Başlat
 
@@ -406,7 +485,9 @@ function App() {
 
               </div>
 
-              <button style={pdfButtonStyle}>PDF İndir</button>
+              <button onClick={handleDownloadPdf} style={pdfButtonStyle}>
+                 PDF İndir
+              </button>
 
             </section>
 
