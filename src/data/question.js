@@ -80,7 +80,7 @@ export const questions = [
   
         "Linke tıklamak",
   
-        "Yetkili kişiye veya IT birimine bildirmek",
+        "Bilgi Güvenliği Yetkili kişisine bildirmek",
   
         "Arkadaşlara göndermek",
   
